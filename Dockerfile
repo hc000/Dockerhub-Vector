@@ -1,14 +1,24 @@
 FROM phusion/baseimage:0.9.17
 
 RUN apt-get update
-RUN apt-get install wget -y
-RUN apt-get install python -y
-RUN mkdir vector && \
-    cd vector && \
-    wget --output-document=- https://bintray.com/artifact/download/netflixoss/downloads/1.0.2/vector.tar.gz \
-    | tar zxf -
+RUN apt-get install -y nodejs npm git && \
+	ln -s /usr/bin/nodejs /usr/bin/node
+RUN npm install -g bower
+RUN sudo npm install http-server -g
 
-EXPOSE 12000
+RUN git clone https://github.com/netflix/vector.git && \
+	cd vector && \
+	git checkout f2f65601713186236e07a4a156d4263dcf436540
 
-ENTRYPOINT ( cd vector && python -m SimpleHTTPServer 12000)
+RUN cd vector/src/app/ && \
+	sed -i '31s/false/true/' app.config.js
 
+RUN cd vector && \
+	bower --allow-root install --config.interactive=false && \
+	npm install && \
+	npm install --global gulp && \
+	gulp
+
+EXPOSE 33100:33100
+
+ENTRYPOINT ( cd vector/dist && http-server --cors -p 33100 )
